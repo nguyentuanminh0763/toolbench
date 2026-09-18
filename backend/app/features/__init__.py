@@ -9,4 +9,6 @@ an explicit list on purpose — scanning the folder to auto-import would save
 one line and cost you every debugging session where a feature silently fails
 to load.
 """
-ROUTERS = []
+from .products.routes import router as products
+
+ROUTERS = [products]

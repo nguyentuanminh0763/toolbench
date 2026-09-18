@@ -306,7 +306,7 @@ function ConnectorList({
 
       <input
         type="search"
-        className="connsearch"
+        className="searchbox"
         placeholder="Search connections"
         value={query}
         onChange={(e) => setQuery(e.target.value)}

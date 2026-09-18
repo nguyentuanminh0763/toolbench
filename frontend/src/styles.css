@@ -186,7 +186,7 @@ input, select, textarea, button { font: inherit; }
 
 .back { padding-left: 0; margin-bottom: 10px; }
 
-.connsearch {
+.searchbox {
   width: 100%;
   padding: 9px 12px;
   margin-bottom: 12px;
@@ -196,7 +196,23 @@ input, select, textarea, button { font: inherit; }
   color: var(--fg);
   font: inherit;
 }
-.connsearch:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.searchbox:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* Search on the left, the one action on the right. */
+.toolbar { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+.toolbar .searchbox { flex: 1; }
+.toolbar button { flex: none; }
+
+.products td { padding: 10px 0; vertical-align: top; }
+.products td:first-child { width: 34%; }
+.products .hint { margin-top: 2px; }
+.products .actions { text-align: right; white-space: nowrap; }
+.products .actions button { padding: 3px 10px; margin-left: 6px; font-size: 13px; }
+button.plain.danger { color: var(--danger); }
+
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.pager button { padding: 5px 14px; font-size: 13px; }
+.pager button:disabled { opacity: 0.4; cursor: default; }
 
 .chips { display: flex; gap: 6px; margin-bottom: 6px; }
 .chip {

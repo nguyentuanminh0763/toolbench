@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import Home from '../pages/Home'
 import Settings from '../pages/Settings'
+import Products from './products/Page'
 
 /**
  * The sidebar is this list, in this order. One folder per tab:
@@ -24,5 +25,6 @@ export type Tab = {
 
 export const TABS: Tab[] = [
   { id: 'home', label: 'Home', Page: Home },
+  { id: 'products', label: 'Products', Page: Products },
   { id: 'settings', label: 'Settings', Page: Settings },
 ]
