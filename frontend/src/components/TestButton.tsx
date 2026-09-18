@@ -12,10 +12,13 @@ export default function TestButton({
   label,
   run,
   dirty,
+  onResult,
 }: {
   label: string
   run: () => Promise<TestResult>
   dirty: boolean
+  /** Lets the caller show the same verdict somewhere else — the connector list. */
+  onResult?: (result: TestResult) => void
 }) {
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
@@ -23,13 +26,15 @@ export default function TestButton({
   async function click() {
     setBusy(true)
     setResult(null)
+    let outcome: TestResult
     try {
-      setResult(await run())
+      outcome = await run()
     } catch (e) {
-      setResult({ ok: false, message: e instanceof ApiError ? e.message : String(e) })
-    } finally {
-      setBusy(false)
+      outcome = { ok: false, message: e instanceof ApiError ? e.message : String(e) }
     }
+    setResult(outcome)
+    onResult?.(outcome)
+    setBusy(false)
   }
 
   return (

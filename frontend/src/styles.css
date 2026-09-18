@@ -169,6 +169,40 @@ input, select, textarea, button { font: inherit; }
 .table tr:last-child td { border-bottom: 0; }
 .table td:first-child { width: 40%; }
 
+/* ----------------------------------------------------------- settings tabs */
+
+.subtabs { display: flex; gap: 6px; margin: 0 0 18px; }
+.subtabs button {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+.subtabs button:hover { background: var(--border); }
+.subtabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.back { padding-left: 0; margin-bottom: 10px; }
+
+/* The connector list. Own class so the plain .table stays reusable. */
+.conns td { padding: 12px 0; }
+.conns td:last-child { text-align: right; }
+.conns td:last-child button { padding: 4px 14px; font-size: 13px; }
+
+.rowname {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.rowname:hover { color: var(--accent); }
+
 .testrow { margin: 14px 0 0; flex-wrap: wrap; }
 .testrow button { padding: 6px 14px; font-size: 13px; }
 .inline { margin: 0; }
