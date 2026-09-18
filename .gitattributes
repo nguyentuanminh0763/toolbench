@@ -1,0 +1,19 @@
+# Normalise line endings so the repo is identical on every machine.
+* text=auto eol=lf
+
+# .bat must keep CRLF: cmd.exe mis-parses a LF-only batch file in ways that are
+# very hard to read — `goto` jumps nowhere, a parenthesised block runs the wrong
+# branch, and nothing says why.
+#
+# `-text`, NOT `text eol=crlf`. The eol= form converts on checkout only, so
+# `git clone` would be fine while GitHub's "Download ZIP" — which is git archive,
+# and does no conversion — still hands out LF files. `-text` stores the bytes
+# untouched, so both paths deliver CRLF. Keep these files CRLF on disk.
+*.bat -text
+
+# Lock files are generated; keep them out of diffs and merge noise.
+uv.lock         linguist-generated=true
+package-lock.json linguist-generated=true
+
+# Built frontend is committed on purpose (see .gitignore) but is not source.
+frontend/dist/** linguist-generated=true

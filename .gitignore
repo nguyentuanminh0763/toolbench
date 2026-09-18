@@ -1,0 +1,29 @@
+# ============ credentials + data — never commit ============
+*.db
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# ============ run output ============
+out/
+.cache/
+*.xlsx
+*.csv
+
+# ============ python ============
+__pycache__/
+*.py[cod]
+.venv/
+
+# ============ node ============
+node_modules/
+
+# NOTE: frontend/dist/ is deliberately NOT ignored.
+# The machines this gets copied to have no Node, so the built interface has to
+# be in the repo. After changing frontend/src: `npm run build`, commit dist too.
+
+# ============ os / editor ============
+.DS_Store
+.idea/
+.vscode/

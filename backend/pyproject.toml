@@ -1,0 +1,13 @@
+[project]
+name = "tool-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.115",
+    # Fernet + scrypt for the encrypted settings. Never hand-roll this.
+    "cryptography>=44",
+]
+
+# This is an application, not a distributable library — uv skips building a wheel.
+[tool.uv]
+package = false
