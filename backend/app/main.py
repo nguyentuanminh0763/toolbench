@@ -27,9 +27,9 @@ from . import db
 from .api.routes import router
 from .features import ROUTERS as FEATURE_ROUTERS
 
-APP_NAME = "Tool Boilerplate"
+APP_NAME = "Toolbench"
 HOST = "127.0.0.1"
-PORT = 8765
+PORT = 8770
 # No port here: the middleware strips the port before matching, and it rejects
 # any pattern whose "*" is not a leading "*." at startup.
 ALLOWED_HOSTS = ("localhost", "127.0.0.1")

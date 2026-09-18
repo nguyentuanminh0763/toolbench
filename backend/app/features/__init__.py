@@ -9,7 +9,4 @@ an explicit list on purpose — scanning the folder to auto-import would save
 one line and cost you every debugging session where a feature silently fails
 to load.
 """
-from .example_one.routes import router as example_one
-from .example_two.routes import router as example_two
-
-ROUTERS = [example_one, example_two]
+ROUTERS = []

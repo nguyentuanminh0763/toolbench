@@ -37,7 +37,7 @@ export default function App() {
   return (
     <div className="layout">
       <nav className="sidebar">
-        <div className="brand">Tool Boilerplate</div>
+        <div className="brand">Toolbench</div>
         {TABS.map((t) => (
           <button
             key={t.id}
