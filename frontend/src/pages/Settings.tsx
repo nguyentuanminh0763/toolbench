@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { api, ApiError, type TestResult } from '../lib/api'
 import KeyList from '../components/KeyList'
 import TestButton from '../components/TestButton'
@@ -46,8 +46,16 @@ type Group = {
    * Present = show this group in Connections instead of General.
    * `filled` answers "are the credentials in place", which is all we can know
    * without going out to the network. `test` is what proves they work.
+   *
+   * `icon` takes an inline <svg> when you want the real logo. Left out, the row
+   * gets a lettered tile — so a new connector looks right with no artwork.
    */
-  connection?: { kind: string; filled: (v: Values) => boolean }
+  connection?: {
+    kind: string
+    filled: (v: Values) => boolean
+    color?: string
+    icon?: ReactNode
+  }
 }
 
 const GROUPS: Group[] = [
@@ -57,6 +65,7 @@ const GROUPS: Group[] = [
     test: { label: 'Test connection', run: api.testWordpress },
     connection: {
       kind: 'Site',
+      color: '#21759b',
       filled: (v) => !!(v.wp_base && v.wp_user && v.wp_app_password),
     },
     fields: [
@@ -76,6 +85,7 @@ const GROUPS: Group[] = [
     note: 'Pick a provider, then paste its API keys.',
     connection: {
       kind: 'Model provider',
+      color: '#7c5cff',
       // Only the selected provider's keys matter — the rest are hidden anyway.
       filled: (v) => !!v[`${v.ai_provider}_keys`],
     },
@@ -118,6 +128,29 @@ const GROUPS: Group[] = [
 const CONNECTIONS = GROUPS.filter((g) => g.connection)
 const GENERAL = GROUPS.filter((g) => !g.connection)
 
+type Filter = 'all' | 'connected' | 'not'
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'connected', label: 'Connected' },
+  { id: 'not', label: 'Not connected' },
+]
+
+/**
+ * One yes/no for the filter chips, from the same facts the Status cell shows:
+ * a real test verdict wins, and without one we fall back to "the fields are
+ * filled in". So a connector that failed its test lands under Not connected,
+ * which is where someone looking for something to fix would go hunting.
+ */
+function isConnected(group: Group, values: Values, result?: TestResult): boolean {
+  return result ? result.ok : group.connection!.filled(values)
+}
+
+/** Stable colour for a connector that did not pick one. */
+function autoColor(title: string): string {
+  const hue = [...title].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 360
+  return `hsl(${hue} 45% 45%)`
+}
+
 export default function Settings() {
   const [values, setValues] = useState<Values>({})
   const [saved, setSaved] = useState('')
@@ -130,6 +163,8 @@ export default function Settings() {
   const [tab, setTab] = useState<'general' | 'connections'>('general')
   /** Title of the connection being edited, '' = show the list. */
   const [open, setOpen] = useState('')
+  const [query, setQuery] = useState('')
+  const [only, setOnly] = useState<Filter>('all')
   // ponytail: verdicts live in memory, so a reload shows "not tested" again.
   // Persist them in db only if someone actually misses them across restarts.
   const [tested, setTested] = useState<Record<string, TestResult>>({})
@@ -212,29 +247,15 @@ export default function Settings() {
           />
         </>
       ) : (
-        <>
-          <p className="muted">
-            Credentials for the places this tool talks to. They stay in{' '}
-            <code>backend/data.db</code> on this machine.
-          </p>
-          <table className="table conns">
-            <tbody>
-              {CONNECTIONS.map((g) => (
-                <tr key={g.title}>
-                  <td>
-                    <button className="rowname" onClick={() => setOpen(g.title)}>
-                      {g.title}
-                    </button>
-                  </td>
-                  <td className="muted inline">{g.connection!.kind}</td>
-                  <td>
-                    <Status group={g} values={values} result={tested[g.title]} onOpen={() => setOpen(g.title)} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
+        <ConnectorList
+          values={values}
+          tested={tested}
+          query={query}
+          setQuery={setQuery}
+          only={only}
+          setOnly={setOnly}
+          onOpen={setOpen}
+        />
       )}
 
       <div className="savebar">
@@ -245,6 +266,113 @@ export default function Settings() {
         {error && <span className="error">{error}</span>}
       </div>
     </section>
+  )
+}
+
+function ConnectorList({
+  values,
+  tested,
+  query,
+  setQuery,
+  only,
+  setOnly,
+  onOpen,
+}: {
+  values: Values
+  tested: Record<string, TestResult>
+  query: string
+  setQuery: (q: string) => void
+  only: Filter
+  setOnly: (f: Filter) => void
+  onOpen: (title: string) => void
+}) {
+  const needle = query.trim().toLowerCase()
+  const shown = CONNECTIONS.filter((g) => {
+    const matches =
+      !needle ||
+      g.title.toLowerCase().includes(needle) ||
+      g.connection!.kind.toLowerCase().includes(needle)
+    if (!matches) return false
+    if (only === 'all') return true
+    return isConnected(g, values, tested[g.title]) === (only === 'connected')
+  })
+
+  return (
+    <>
+      <p className="muted">
+        Credentials for the places this tool talks to. They stay in{' '}
+        <code>backend/data.db</code> on this machine.
+      </p>
+
+      <input
+        type="search"
+        className="connsearch"
+        placeholder="Search connections"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
+      <div className="chips">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            className={`chip${only === f.id ? ' active' : ''}`}
+            onClick={() => setOnly(f.id)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {shown.length === 0 ? (
+        // Without this the table just vanishes and reads as a broken screen.
+        <p className="muted">Nothing matches that.</p>
+      ) : (
+        <table className="table conns">
+          <thead>
+            <tr>
+              <th>Connection</th>
+              <th>Type</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((g) => (
+              <tr key={g.title}>
+                <td>
+                  <button className="rowname" onClick={() => onOpen(g.title)}>
+                    <ConnIcon group={g} />
+                    {g.title}
+                  </button>
+                </td>
+                <td className="muted inline">{g.connection!.kind}</td>
+                <td>
+                  <Status
+                    group={g}
+                    values={values}
+                    result={tested[g.title]}
+                    onOpen={() => onOpen(g.title)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  )
+}
+
+function ConnIcon({ group }: { group: Group }) {
+  const { color, icon } = group.connection!
+  return (
+    <span
+      className="conn-icon"
+      style={{ background: color ?? autoColor(group.title) }}
+      aria-hidden="true"
+    >
+      {icon ?? group.title[0]}
+    </span>
   )
 }
 
