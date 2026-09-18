@@ -1,12 +1,10 @@
 import { useState } from 'react'
+import { Plus, Trash2, Pencil, Copy, Check, Key } from 'lucide-react'
+import { toast } from '../lib/toast'
 
 /**
  * A named list of API keys: one row by default, "+ Add key" for spares.
- *
  * Stored as a JSON string in one setting, so the backend needs no extra table.
- * Each entry carries an `id` the backend matches on when merging masked values
- * back in — that is what lets you add a fourth key without retyping the first
- * three, and rename or reorder without losing any.
  */
 const MASK = '••••••••'
 
@@ -36,13 +34,9 @@ export default function KeyList({
   value: string
   onChange: (raw: string) => void
 }) {
-  // The placeholder row's id is minted ONCE. Generating it inline would hand
-  // React a new `key` on every parent re-render — which happens on every
-  // keystroke in any other field — tearing the row down and losing focus.
   const [placeholder] = useState(blank)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  // Always show at least one row, but do not write it to state until the user
-  // types: an empty row must not count as a key.
   const entries = parse(value)
   const rows = entries.length ? entries : [placeholder]
 
@@ -51,54 +45,103 @@ export default function KeyList({
   const edit = (id: string, patch: Partial<Entry>) =>
     commit(rows.map((e) => (e.id === id ? { ...e, ...patch } : e)))
 
+  const copyKey = async (id: string, val: string) => {
+    if (!val || val.includes(MASK)) return
+    try {
+      await navigator.clipboard.writeText(val)
+      setCopiedId(id)
+      toast.success('API Key copied to clipboard')
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      toast.error('Failed to copy key')
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {rows.map((e, i) => {
         const locked = e.value.includes(MASK)
         return (
-          <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto] items-center gap-1.5">
-            <input
-              className="input px-2 py-1.5 text-[13px]"
-              value={e.name}
-              placeholder={i === 0 ? 'Main' : `Spare ${i}`}
-              onChange={(ev) => edit(e.id, { name: ev.target.value })}
-            />
-            <input
-              className="input px-2 py-1.5 font-mono text-[13px]"
-              value={e.value}
-              readOnly={locked}
-              placeholder="paste the API key"
-              onChange={(ev) => edit(e.id, { value: ev.target.value })}
-            />
-            {locked ? (
-              <button
-                type="button"
-                className="icon-btn"
-                title="Replace this key"
-                // Clear it so the user retypes: merging a typed fragment with a
-                // masked one would be guesswork.
-                onClick={() => edit(e.id, { value: '' })}
-              >
-                ✎
-              </button>
-            ) : (
-              <span className="w-7" />
-            )}
+          <div
+            key={e.id}
+            className="grid grid-cols-[minmax(120px,1fr)_minmax(0,2.5fr)_auto_auto] items-center gap-2 p-2 rounded-xl border border-line bg-card/60 shadow-2xs"
+          >
+            {/* Key label */}
+            <div className="relative">
+              <input
+                className="input py-1.5 px-2.5 text-xs"
+                value={e.name}
+                placeholder={i === 0 ? 'Primary Key' : `Backup Key ${i}`}
+                onChange={(ev) => edit(e.id, { name: ev.target.value })}
+              />
+            </div>
+
+            {/* Key secret input */}
+            <div className="relative">
+              <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted/60">
+                <Key className="h-3.5 w-3.5" />
+              </div>
+              <input
+                className="input pl-8 py-1.5 px-2.5 font-mono text-xs text-fg tracking-wide"
+                value={e.value}
+                readOnly={locked}
+                placeholder="Paste your API key (e.g. sk-ant-..., AIza...)"
+                onChange={(ev) => edit(e.id, { value: ev.target.value })}
+              />
+            </div>
+
+            {/* Replace / Copy actions */}
+            <div className="flex items-center gap-1">
+              {!locked && e.value && (
+                <button
+                  type="button"
+                  className="icon-btn h-7 w-7"
+                  title="Copy API key"
+                  onClick={() => copyKey(e.id, e.value)}
+                >
+                  {copiedId === e.id ? (
+                    <Check className="h-3.5 w-3.5 text-success" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+
+              {locked ? (
+                <button
+                  type="button"
+                  className="icon-btn h-7 w-7 text-accent hover:bg-accent/10"
+                  title="Replace / update this masked key"
+                  onClick={() => edit(e.id, { value: '' })}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <span className="w-1" />
+              )}
+            </div>
+
+            {/* Remove button */}
             <button
               type="button"
-              className="icon-btn"
-              title="Remove"
+              className="icon-btn h-7 w-7 hover:text-danger hover:bg-danger/10"
+              title="Remove key"
               disabled={rows.length === 1 && !e.name && !e.value}
               onClick={() => commit(rows.filter((r) => r.id !== e.id))}
             >
-              ×
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
         )
       })}
 
-      <button type="button" className="btn-link self-start" onClick={() => commit([...rows, blank()])}>
-        + Add key
+      <button
+        type="button"
+        className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-hover py-1 px-2 rounded-lg hover:bg-accent/5 transition-colors"
+        onClick={() => commit([...rows, blank()])}
+      >
+        <Plus className="h-3.5 w-3.5" />
+        <span>Add spare rotation key</span>
       </button>
     </div>
   )

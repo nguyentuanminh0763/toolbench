@@ -1,89 +1,187 @@
 @import "tailwindcss";
 
-/* ---------------------------------------------------------------- the knobs
+/* ---------------------------------------------------------------- Theme Design System
+   Sleek, modern SaaS aesthetic inspired by Linear, Raycast, and Vercel.
+   Supports automatic system dark mode AND manual user toggle via html.dark / html.light.
+---------------------------------------------------------------- */
 
-   Every colour in the tool. The utilities below compile to var(--color-*),
-   so changing a line here still changes the whole interface — same as before
-   Tailwind, you just get spacing and layout utilities on top.
-
-   Names are what the colour is FOR, not what it looks like. `bg-card` keeps
-   meaning the right thing after someone makes the theme green. */
 @theme {
-  --color-bg: #ffffff;
-  --color-soft: #f6f8fb;
+  --color-bg: #f8fafc;
+  --color-soft: #f1f5f9;
   --color-card: #ffffff;
-  --color-fg: #1a2330;
-  --color-muted: #6b7685;
-  --color-line: #e2e7ef;
-  --color-accent: #2563eb;
-  --color-danger: #dc2626;
-  --color-success: #16a34a;
+  --color-fg: #0f172a;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-muted: #e0e7ff;
+  --color-danger: #e11d48;
+  --color-danger-muted: #ffe4e6;
+  --color-success: #059669;
+  --color-success-muted: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-muted: #fef3c7;
 
-  --font-sans: system-ui, "Segoe UI", sans-serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Sidebar width. The fixed save bar has to start exactly where it ends. */
-  --spacing-sidebar: 190px;
+  /* Sidebar width */
+  --spacing-sidebar: 230px;
 }
 
-/* Follows the operating system. No toggle to build, no preference to store. */
+/* Light mode explicit override */
+html.light,
+:root {
+  --color-bg: #f8fafc;
+  --color-soft: #f1f5f9;
+  --color-card: #ffffff;
+  --color-fg: #0f172a;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-muted: #eef2ff;
+  --color-danger: #e11d48;
+  --color-danger-muted: #ffe4e6;
+  --color-success: #059669;
+  --color-success-muted: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-muted: #fef3c7;
+}
+
+/* Dark mode by preference or explicit html.dark class */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0d1424;
-    --color-soft: #111a2e;
-    --color-card: #141d33;
-    --color-fg: #e2e8f0;
-    --color-muted: #8c9bb3;
-    --color-line: #253248;
+  :root:not(.light) {
+    --color-bg: #090d16;
+    --color-soft: #0f172a;
+    --color-card: #131c31;
+    --color-fg: #f1f5f9;
+    --color-muted: #94a3b8;
+    --color-line: rgba(255, 255, 255, 0.08);
+    --color-line-strong: rgba(255, 255, 255, 0.16);
+    --color-accent: #6366f1;
+    --color-accent-hover: #818cf8;
+    --color-accent-muted: rgba(99, 102, 241, 0.15);
+    --color-danger: #f43f5e;
+    --color-danger-muted: rgba(244, 63, 94, 0.15);
+    --color-success: #10b981;
+    --color-success-muted: rgba(16, 185, 129, 0.15);
+    --color-warning: #fbbf24;
+    --color-warning-muted: rgba(251, 191, 36, 0.15);
   }
+}
+
+html.dark {
+  --color-bg: #090d16;
+  --color-soft: #0f172a;
+  --color-card: #131c31;
+  --color-fg: #f1f5f9;
+  --color-muted: #94a3b8;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.16);
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-muted: rgba(99, 102, 241, 0.15);
+  --color-danger: #f43f5e;
+  --color-danger-muted: rgba(244, 63, 94, 0.15);
+  --color-success: #10b981;
+  --color-success-muted: rgba(16, 185, 129, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-muted: rgba(251, 191, 36, 0.15);
 }
 
 @layer base {
-  body {
-    background: var(--color-bg);
-    color: var(--color-fg);
-    line-height: 1.55;
+  * {
+    border-color: var(--color-line);
   }
 
-  h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
-  h2 { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.25rem; }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted);
+  }
 }
 
-/* ----------------------------------------------------------- the repeaters
-
-   Only things that appear five or more times. Everything else is written as
-   plain utilities on the element, so a snippet pasted from anywhere still
-   works without knowing about this file. */
 @layer components {
+  /* Input & Select */
   .input {
-    @apply w-full rounded-lg border border-line bg-bg px-3 py-2 text-fg;
-    @apply focus:outline-2 focus:outline-accent focus:-outline-offset-1;
-    @apply read-only:text-muted;
+    @apply w-full rounded-lg border border-line bg-card px-3.5 py-2 text-sm text-fg transition-all duration-150;
+    @apply placeholder:text-muted/60;
+    @apply focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20;
+    @apply read-only:bg-soft read-only:text-muted read-only:cursor-default;
   }
 
+  /* Buttons */
   .btn {
-    @apply cursor-pointer rounded-lg border border-line bg-bg px-4 py-2 text-fg;
-    @apply hover:bg-line disabled:cursor-default disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-line bg-card px-3.5 py-2 text-sm font-medium text-fg shadow-xs transition-all duration-150;
+    @apply hover:bg-soft hover:border-line-strong active:scale-[0.98];
+    @apply disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100;
   }
 
   .btn-primary {
-    @apply cursor-pointer rounded-lg border border-accent bg-accent px-4 py-2 text-white;
-    @apply disabled:cursor-default disabled:opacity-55;
+    @apply inline-flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-transparent bg-gradient-to-r from-accent to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150;
+    @apply hover:from-accent-hover hover:to-indigo-700 hover:shadow-md hover:shadow-accent/20 active:scale-[0.98];
+    @apply disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
   }
 
-  /* A button that reads as a link. */
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-transparent bg-danger/10 text-danger px-3 py-1.5 text-xs font-semibold transition-all duration-150;
+    @apply hover:bg-danger hover:text-white active:scale-[0.98];
+    @apply disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-xs font-medium text-muted transition-all duration-150;
+    @apply hover:bg-soft hover:text-fg active:scale-[0.98];
+  }
+
   .btn-link {
-    @apply cursor-pointer border-0 bg-transparent p-0 text-sm text-accent hover:underline;
+    @apply inline-flex items-center gap-1 cursor-pointer border-0 bg-transparent p-0 text-xs font-medium text-accent transition-colors hover:text-accent-hover hover:underline;
   }
 
+  /* Cards */
   .card {
-    @apply mb-4 rounded-xl border border-line bg-card p-5;
+    @apply rounded-xl border border-line bg-card p-5 shadow-xs transition-shadow duration-200;
   }
 
-  /* Square icon button — the ✎ and × in the key list, the eye in the lock. */
+  .card-hover {
+    @apply hover:border-line-strong hover:shadow-sm;
+  }
+
+  .glass {
+    @apply backdrop-blur-md bg-card/85 border border-line;
+  }
+
+  /* Icon button */
   .icon-btn {
-    @apply flex h-7 w-7 flex-none cursor-pointer items-center justify-center;
-    @apply rounded-md border-0 bg-transparent text-muted;
-    @apply hover:not-disabled:bg-line hover:not-disabled:text-fg;
-    @apply disabled:cursor-default disabled:opacity-25;
+    @apply flex h-8 w-8 flex-none cursor-pointer items-center justify-center rounded-lg border border-transparent text-muted transition-all duration-150;
+    @apply hover:bg-soft hover:text-fg hover:border-line active:scale-95;
+    @apply disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
 }

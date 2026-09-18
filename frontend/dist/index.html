@@ -3,11 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Toolbench</title>
-    <script type="module" crossorigin src="/assets/index-CrduVuUV.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BGfQOA2z.css">
+    <title>Toolbench — Local Operations Workspace</title>
+    <meta name="description" content="Secure, high-performance local workspace and management dashboard." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='4'/><path d='m9 12 2 2 4-4'/></svg>" />
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('toolbench_theme');
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (!stored && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-Dn3S7zNt.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BkhwM87N.css">
   </head>
-  <body>
+  <body class="bg-bg text-fg antialiased selection:bg-accent/20 selection:text-accent font-sans">
     <div id="root"></div>
   </body>
 </html>

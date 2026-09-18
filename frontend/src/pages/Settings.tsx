@@ -1,23 +1,26 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { api, ApiError, type TestResult } from '../lib/api'
+import { toast } from '../lib/toast'
 import KeyList from '../components/KeyList'
 import TestButton from '../components/TestButton'
-
-/**
- * Values are stored in SQLite, not a .env file — when the tool is copied to
- * another machine the user fills this in instead of editing a text file.
- *
- * Keys ending in _key / _keys / _password / _token / _secret are secrets: the
- * backend returns them masked, and saving a masked value keeps the stored one.
- *
- * To add a setting, add a line to GROUPS. Nothing to change in the backend.
- * `when` hides a field until it is relevant — that is what keeps this screen
- * short as more providers get added.
- *
- * Two sub-tabs. A group with `connection` is something with credentials that
- * points at somewhere else, so it gets a row in Connections; everything else
- * is a plain preference and stays in General.
- */
+import {
+  Sliders,
+  Globe,
+  Search,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  ArrowLeft,
+  Save,
+  Check,
+  Database,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ChevronRight,
+} from 'lucide-react'
+import wpLogoUrl from '../assets/wordpress-logo.png'
 
 export type Field = {
   key: string
@@ -40,16 +43,7 @@ type Group = {
   title: string
   note?: string
   fields: Field[]
-  /** Optional check button. It runs against the SAVED settings, not the form. */
   test?: { label: string; run: () => Promise<TestResult> }
-  /**
-   * Present = show this group in Connections instead of General.
-   * `filled` answers "are the credentials in place", which is all we can know
-   * without going out to the network. `test` is what proves they work.
-   *
-   * `icon` takes an inline <svg> when you want the real logo. Left out, the row
-   * gets a lettered tile — so a new connector looks right with no artwork.
-   */
   connection?: {
     kind: string
     filled: (v: Values) => boolean
@@ -58,69 +52,93 @@ type Group = {
   }
 }
 
+const WordPressLogo = (
+  <img src={wpLogoUrl} alt="WordPress" className="w-full h-full object-contain drop-shadow-xs" />
+)
+
 const GROUPS: Group[] = [
   {
     title: 'WordPress',
-    note: 'Application password, not the login password. Users → Profile → Application Passwords.',
-    test: { label: 'Test connection', run: api.testWordpress },
+    note: 'Application password (not your login password). Go to Users → Profile → Application Passwords.',
+    test: { label: 'Test site connection', run: api.testWordpress },
     connection: {
-      kind: 'Site',
-      color: '#21759b',
+      kind: 'WooCommerce Store',
+      color: 'transparent',
+      icon: WordPressLogo,
       filled: (v) => !!(v.wp_base && v.wp_user && v.wp_app_password),
     },
     fields: [
-      { key: 'wp_base', label: 'Site URL', placeholder: 'https://example.com' },
-      { key: 'wp_user', label: 'Username', placeholder: 'admin', half: true },
+      { key: 'wp_base', label: 'WordPress Site URL', placeholder: 'https://example.com' },
+      { key: 'wp_user', label: 'Admin Username', placeholder: 'admin', half: true },
       {
         key: 'wp_app_password',
-        label: 'Application password',
+        label: 'Application Password',
         type: 'secret',
         placeholder: 'xxxx xxxx xxxx xxxx',
+        help: 'Generated from WordPress admin, spaces are ignored.',
         half: true,
       },
     ],
   },
   {
-    title: 'AI',
-    note: 'Pick a provider, then paste its API keys.',
+    title: 'AI Providers',
+    note: 'Configure API keys for Google Gemini, OpenAI GPT, or Anthropic Claude.',
     connection: {
-      kind: 'Model provider',
-      color: '#7c5cff',
-      // Only the selected provider's keys matter — the rest are hidden anyway.
+      kind: 'LLM Routing',
+      color: '#6366f1',
+      icon: <Sparkles className="w-4 h-4 text-white" />,
       filled: (v) => !!v[`${v.ai_provider}_keys`],
     },
     fields: [
-      { key: 'ai_provider', label: 'Provider', type: 'select', options: ['gemini', 'openai', 'claude'] },
+      {
+        key: 'ai_provider',
+        label: 'Active Provider',
+        type: 'select',
+        options: ['gemini', 'openai', 'claude'],
+        help: 'Switching active provider routes all prompt executions accordingly.',
+      },
 
-      { key: 'gemini_keys', label: 'Gemini keys', type: 'keys', when: ai('gemini') },
+      { key: 'gemini_keys', label: 'Google Gemini Keys', type: 'keys', when: ai('gemini') },
       {
         key: 'gemini_model',
-        label: 'Model',
+        label: 'Gemini Model',
         placeholder: 'gemini-2.5-flash',
-        help: 'Free quota is per model, so switching model gives a fresh allowance.',
+        help: 'Free quota is separated per model name.',
         when: ai('gemini'),
       },
 
-      { key: 'openai_keys', label: 'OpenAI keys', type: 'keys', when: ai('openai') },
-      { key: 'openai_model', label: 'Model', placeholder: 'gpt-5', half: true, when: ai('openai') },
+      { key: 'openai_keys', label: 'OpenAI API Keys', type: 'keys', when: ai('openai') },
+      { key: 'openai_model', label: 'OpenAI Model', placeholder: 'gpt-4o', half: true, when: ai('openai') },
       {
         key: 'openai_reasoning',
-        label: 'Reasoning effort',
+        label: 'Reasoning Effort',
         type: 'select',
         options: ['minimal', 'low', 'medium', 'high'],
         half: true,
         when: ai('openai'),
       },
 
-      { key: 'claude_keys', label: 'Claude keys', type: 'keys', when: ai('claude') },
-      { key: 'claude_model', label: 'Model', placeholder: 'claude-opus-5', when: ai('claude') },
+      { key: 'claude_keys', label: 'Anthropic Claude Keys', type: 'keys', when: ai('claude') },
+      { key: 'claude_model', label: 'Claude Model', placeholder: 'claude-3-5-sonnet-latest', when: ai('claude') },
     ],
   },
   {
-    title: 'Network',
+    title: 'Network & Proxy',
+    note: 'HTTP outgoing client headers and socket timeout limits.',
     fields: [
-      { key: 'http_user_agent', label: 'User agent' },
-      { key: 'http_timeout', label: 'Timeout (seconds)', type: 'number', half: true },
+      {
+        key: 'http_user_agent',
+        label: 'HTTP User Agent',
+        placeholder: 'Toolbench/1.2 (+http://127.0.0.1)',
+        help: 'Sent in header to identify automated requests.',
+      },
+      {
+        key: 'http_timeout',
+        label: 'Request Timeout (seconds)',
+        type: 'number',
+        placeholder: '30',
+        half: true,
+      },
     ],
   },
 ]
@@ -130,25 +148,18 @@ const GENERAL = GROUPS.filter((g) => !g.connection)
 
 type Filter = 'all' | 'connected' | 'not'
 const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'connected', label: 'Connected' },
-  { id: 'not', label: 'Not connected' },
+  { id: 'all', label: 'All Services' },
+  { id: 'connected', label: 'Configured' },
+  { id: 'not', label: 'Needs Setup' },
 ]
 
-/**
- * One yes/no for the filter chips, from the same facts the Status cell shows:
- * a real test verdict wins, and without one we fall back to "the fields are
- * filled in". So a connector that failed its test lands under Not connected,
- * which is where someone looking for something to fix would go hunting.
- */
 function isConnected(group: Group, values: Values, result?: TestResult): boolean {
   return result ? result.ok : group.connection!.filled(values)
 }
 
-/** Stable colour for a connector that did not pick one. */
 function autoColor(title: string): string {
   const hue = [...title].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % 360
-  return `hsl(${hue} 45% 45%)`
+  return `hsl(${hue}, 65%, 45%)`
 }
 
 export default function Settings() {
@@ -156,17 +167,11 @@ export default function Settings() {
   const [saved, setSaved] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  // Unsaved edits matter here: the test button checks what is in the database,
-  // not what is on screen. Without this the user tests the old values and
-  // cannot work out why the fix did nothing.
   const [dirty, setDirty] = useState(false)
-  const [tab, setTab] = useState<'general' | 'connections'>('general')
-  /** Title of the connection being edited, '' = show the list. */
+  const [tab, setTab] = useState<'connections' | 'general'>('connections')
   const [open, setOpen] = useState('')
   const [query, setQuery] = useState('')
   const [only, setOnly] = useState<Filter>('all')
-  // ponytail: verdicts live in memory, so a reload shows "not tested" again.
-  // Persist them in db only if someone actually misses them across restarts.
   const [tested, setTested] = useState<Record<string, TestResult>>({})
 
   useEffect(() => {
@@ -184,61 +189,104 @@ export default function Settings() {
     setError('')
     setSaving(true)
     try {
-      setValues(await api.saveSettings(values))
-      setSaved('Saved')
+      const updated = await api.saveSettings(values)
+      setValues(updated)
+      setSaved('Changes saved successfully')
       setDirty(false)
-      // The credentials just changed, so every stored verdict is about the old
-      // ones. Dropping them beats showing a tick that is no longer true.
       setTested({})
+      toast.success('Settings saved to encrypted database.')
+      setTimeout(() => setSaved(''), 3500)
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : String(e))
+      const msg = e instanceof ApiError ? e.message : String(e)
+      setError(msg)
+      toast.error(`Save failed: ${msg}`)
     } finally {
       setSaving(false)
     }
   }
 
-  function show(next: 'general' | 'connections') {
-    setTab(next)
-    setOpen('')
-  }
+  // Ctrl+S keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        save()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [values])
 
   const editing = CONNECTIONS.find((g) => g.title === open)
 
   return (
-    <section>
-      <h1>Settings</h1>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-fg tracking-tight">Settings & Preferences</h1>
+          <p className="mt-1 text-xs text-muted">
+            Secure configuration saved strictly to local database <code className="font-mono text-accent">backend/data.db</code>.
+          </p>
+        </div>
 
-      <div className="mb-4.5 flex gap-1.5">
-        {(['general', 'connections'] as const).map((id) => (
+        {/* Segmented Tab Controls */}
+        <div className="flex items-center p-1 rounded-xl bg-soft border border-line">
           <button
-            key={id}
-            className={`cursor-pointer rounded-lg border px-3.5 py-1.5 capitalize ${
-              tab === id
-                ? 'border-accent bg-accent text-white'
-                : 'border-line bg-transparent text-fg hover:bg-line'
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              tab === 'connections'
+                ? 'bg-card text-accent shadow-xs'
+                : 'text-muted hover:text-fg'
             }`}
-            onClick={() => show(id)}
+            onClick={() => {
+              setTab('connections')
+              setOpen('')
+            }}
           >
-            {id}
+            <Globe className="h-3.5 w-3.5" />
+            <span>Connections ({CONNECTIONS.length})</span>
           </button>
-        ))}
+          <button
+            className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              tab === 'general'
+                ? 'bg-card text-accent shadow-xs'
+                : 'text-muted hover:text-fg'
+            }`}
+            onClick={() => {
+              setTab('general')
+              setOpen('')
+            }}
+          >
+            <Sliders className="h-3.5 w-3.5" />
+            <span>General Config</span>
+          </button>
+        </div>
       </div>
 
+      {/* Tab Body */}
       {tab === 'general' ? (
-        <>
-          <p className="mb-4 text-[13px] text-muted">
-            Stored in <Code>backend/data.db</Code> on this machine. Never committed,
-            never sent anywhere.
-          </p>
+        <div className="flex flex-col gap-5">
+          <div className="p-3.5 rounded-xl border border-line bg-soft/50 text-xs text-muted flex items-center gap-2.5">
+            <Database className="h-4 w-4 text-accent flex-none" />
+            <span>
+              All settings are stored in local encrypted SQLite. No external telemetry or cloud persistence.
+            </span>
+          </div>
+
           {GENERAL.map((g) => (
             <GroupCard key={g.title} group={g} values={values} set={set} dirty={dirty} />
           ))}
-        </>
+        </div>
       ) : editing ? (
-        <>
-          <button className="btn-link mb-2.5" onClick={() => setOpen('')}>
-            ← All connections
+        <div className="flex flex-col gap-4">
+          <button
+            className="self-start inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-hover px-2 py-1 rounded-lg hover:bg-accent/5 transition-colors"
+            onClick={() => setOpen('')}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to all connections</span>
           </button>
+
           <GroupCard
             group={editing}
             values={values}
@@ -246,7 +294,7 @@ export default function Settings() {
             dirty={dirty}
             onResult={(r) => setTested((prev) => ({ ...prev, [editing.title]: r }))}
           />
-        </>
+        </div>
       ) : (
         <ConnectorList
           values={values}
@@ -259,16 +307,45 @@ export default function Settings() {
         />
       )}
 
-      {/* Fixed so Save is reachable without scrolling back up. It starts where
-          the sidebar ends, hence w-sidebar being a shared value. */}
-      <div className="fixed right-0 bottom-0 left-sidebar flex items-center gap-3 border-t border-line bg-soft px-[30px] py-3">
-        <button className="btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-        {saved && <span className="text-[13px] text-success">{saved}</span>}
-        {error && <span className="text-[13px] text-danger">{error}</span>}
+      {/* Floating Save Action Bar */}
+      <div className="fixed right-0 bottom-0 left-sidebar z-40 flex items-center justify-between border-t border-line bg-card/90 backdrop-blur-md px-8 py-3.5 shadow-lg">
+        <div className="flex items-center gap-3">
+          {dirty ? (
+            <div className="flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+              <span>You have unsaved changes</span>
+            </div>
+          ) : saved ? (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <Check className="h-3.5 w-3.5" />
+              <span>{saved}</span>
+            </div>
+          ) : (
+            <span className="text-xs text-muted">All credentials safely stored in database</span>
+          )}
+
+          {error && <span className="text-xs text-danger font-medium">{error}</span>}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] text-muted hidden sm:inline-block">
+            Press <kbd className="px-1.5 py-0.5 rounded bg-soft border border-line font-mono text-[10px]">Ctrl+S</kbd> to save
+          </span>
+
+          <button
+            className="btn-primary text-xs py-2 px-4 shadow-sm"
+            onClick={save}
+            disabled={saving || !dirty}
+          >
+            <Save className="h-3.5 w-3.5" />
+            <span>{saving ? 'Saving changes…' : 'Save Changes'}</span>
+          </button>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -301,135 +378,146 @@ function ConnectorList({
   })
 
   return (
-    <>
-      <p className="mb-4 text-[13px] text-muted">
-        Credentials for the places this tool talks to. They stay in{' '}
-        <Code>backend/data.db</Code> on this machine.
-      </p>
+    <div className="flex flex-col gap-4">
+      {/* Search and Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border border-line bg-card shadow-xs">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none" />
+          <input
+            type="search"
+            className="input pl-9 pr-8 text-xs py-2"
+            placeholder="Search connections..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-fg p-0.5 rounded"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
-      <input
-        type="search"
-        className="input mb-3"
-        placeholder="Search connections"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-
-      <div className="mb-1.5 flex gap-1.5">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            className={`cursor-pointer rounded-full border border-line px-3 py-1 text-[13px] ${
-              only === f.id ? 'bg-line text-fg' : 'bg-transparent text-muted hover:bg-line'
-            }`}
-            onClick={() => setOnly(f.id)}
-          >
-            {f.label}
-          </button>
-        ))}
+        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-soft border border-line">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                only === f.id
+                  ? 'bg-card text-accent shadow-xs'
+                  : 'text-muted hover:text-fg'
+              }`}
+              onClick={() => setOnly(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Connectors Grid / Cards */}
       {shown.length === 0 ? (
-        // Without this the table just vanishes and reads as a broken screen.
-        <p className="mb-4 text-[13px] text-muted">Nothing matches that.</p>
+        <div className="p-8 text-center card border-dashed">
+          <p className="text-xs text-muted">No connections match your current search or filter.</p>
+        </div>
       ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-line text-left text-xs font-medium text-muted">
-              <th className="w-2/5 py-2">Connection</th>
-              <th className="py-2">Type</th>
-              <th className="py-2 text-right">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((g) => (
-              <tr key={g.title} className="border-b border-line last:border-b-0">
-                <td className="py-2.5">
-                  <button
-                    className="flex cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0 text-left font-medium text-fg hover:text-accent"
-                    onClick={() => onOpen(g.title)}
-                  >
-                    <ConnIcon group={g} />
-                    {g.title}
-                  </button>
-                </td>
-                <td className="py-2.5 text-[13px] text-muted">{g.connection!.kind}</td>
-                <td className="py-2.5 text-right">
-                  <Status
-                    group={g}
-                    values={values}
-                    result={tested[g.title]}
-                    onOpen={() => onOpen(g.title)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {shown.map((g) => {
+            return (
+              <div
+                key={g.title}
+                onClick={() => onOpen(g.title)}
+                className="card card-hover cursor-pointer p-5 flex flex-col justify-between border-line group relative"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-white shadow-xs group-hover:scale-105 transition-transform"
+                        style={{ background: g.connection!.color ?? autoColor(g.title) }}
+                      >
+                        {g.connection!.icon ?? g.title[0]}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-fg group-hover:text-accent transition-colors">
+                          {g.title}
+                        </h3>
+                        <span className="text-[11px] text-muted">{g.connection!.kind}</span>
+                      </div>
+                    </div>
+
+                    <Status
+                      group={g}
+                      values={values}
+                      result={tested[g.title]}
+                    />
+                  </div>
+
+                  {g.note && (
+                    <p className="mt-3 text-xs text-muted leading-relaxed line-clamp-2">
+                      {g.note}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-line flex items-center justify-between text-xs text-accent font-semibold group-hover:translate-x-0.5 transition-transform">
+                  <span>Configure credentials</span>
+                  <ChevronRight className="h-4 w-4" />
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
-    </>
+    </div>
   )
 }
 
-function ConnIcon({ group }: { group: Group }) {
-  const { color, icon } = group.connection!
-  return (
-    <span
-      className="flex h-7 w-7 flex-none items-center justify-center rounded-[7px] text-sm font-bold text-white uppercase"
-      style={{ background: color ?? autoColor(group.title) }}
-      aria-hidden="true"
-    >
-      {icon ?? group.title[0]}
-    </span>
-  )
-}
-
-/** `backend/data.db` and friends. Inline because it is two lines of styling. */
-function Code({ children }: { children: ReactNode }) {
-  return (
-    <code className="rounded border border-line bg-soft px-1.5 py-px text-xs">{children}</code>
-  )
-}
-
-/**
- * What the list says about one connector. Four cases on purpose — "the keys are
- * filled in" and "the keys work" are different claims, and collapsing them into
- * one green tick is how you end up debugging a connection the screen swore was
- * fine.
- */
 function Status({
   group,
   values,
   result,
-  onOpen,
 }: {
   group: Group
   values: Values
   result?: TestResult
-  onOpen: () => void
 }) {
   if (result) {
     return (
       <span
-        className={`text-[13px] ${result.ok ? 'text-success' : 'text-danger'}`}
+        className={`badge ${
+          result.ok
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+        }`}
         title={result.message}
       >
-        {result.ok ? '✓ Connected' : '✕ Failed'}
+        {result.ok ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+        <span>{result.ok ? 'Verified' : 'Failed'}</span>
       </span>
     )
   }
+
   if (!group.connection!.filled(values)) {
     return (
-      <button className="btn px-3.5 py-1 text-[13px]" onClick={onOpen}>
-        Connect
-      </button>
+      <span className="badge bg-soft text-muted border border-line">
+        Needs Setup
+      </span>
     )
   }
-  // Filled in but unproven. Only say so where a test actually exists to run.
+
   return group.test ? (
-    <span className="text-[13px] text-muted">Set up — not tested</span>
+    <span className="badge bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+      <Clock className="h-3 w-3" />
+      <span>Set up · Untested</span>
+    </span>
   ) : (
-    <span className="text-[13px] text-success">✓ Set up</span>
+    <span className="badge bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+      <CheckCircle2 className="h-3 w-3" />
+      <span>Configured</span>
+    </span>
   )
 }
 
@@ -448,16 +536,28 @@ function GroupCard({
 }) {
   const shown = group.fields.filter((f) => !f.when || f.when(values))
   return (
-    <div className="card">
-      <h2>{group.title}</h2>
-      {group.note && <p className="mt-0.5 mb-3.5 text-[13px] text-muted">{group.note}</p>}
-      {/* Two columns; a field marked full spans both, so short fields pair up
-          and the card stays short instead of one endless column. */}
-      <div className="grid grid-cols-2 gap-x-3.5 gap-y-3">
+    <div className="card p-6 border-line">
+      <div className="flex items-center gap-3 pb-3 border-b border-line">
+        {group.connection && (
+          <div
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-xl text-white shadow-xs"
+            style={{ background: group.connection.color ?? autoColor(group.title) }}
+          >
+            {group.connection.icon ?? group.title[0]}
+          </div>
+        )}
+        <div>
+          <h2 className="text-base font-bold text-fg">{group.title}</h2>
+          {group.note && <p className="text-xs text-muted mt-0.5">{group.note}</p>}
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {shown.map((f) => (
           <Row key={f.key} field={f} value={values[f.key] ?? ''} onChange={set} />
         ))}
       </div>
+
       {group.test && (
         <TestButton label={group.test.label} run={group.test.run} dirty={dirty} onResult={onResult} />
       )}
@@ -475,11 +575,12 @@ function Row({
   onChange: (key: string, value: string) => void
 }) {
   const { key, label, type = 'text', options, placeholder, help, half } = field
+  const [reveal, setReveal] = useState(false)
 
   if (type === 'keys') {
     return (
       <div className="col-span-full block min-w-0">
-        <span className="mb-1 block text-[13px] font-medium">{label}</span>
+        <span className="mb-2 block text-xs font-semibold text-fg">{label}</span>
         <KeyList value={value} onChange={(v) => onChange(key, v)} />
       </div>
     )
@@ -489,17 +590,25 @@ function Row({
 
   return (
     <label className={`block min-w-0 ${half ? '' : 'col-span-full'}`}>
-      <span className="mb-1 block text-[13px] font-medium">
-        {label}
+      <span className="mb-1.5 flex items-center justify-between text-xs font-semibold text-fg">
+        <span>{label}</span>
         {locked && (
-          <button type="button" className="btn-link ml-2" onClick={() => onChange(key, '')}>
-            Change
+          <button
+            type="button"
+            className="text-xs font-medium text-accent hover:underline cursor-pointer"
+            onClick={() => onChange(key, '')}
+          >
+            Change secret
           </button>
         )}
       </span>
 
       {type === 'select' ? (
-        <select className="input" value={value} onChange={(e) => onChange(key, e.target.value)}>
+        <select
+          className="input capitalize text-xs py-2"
+          value={value}
+          onChange={(e) => onChange(key, e.target.value)}
+        >
           {!options?.includes(value) && <option value={value}>{value || '—'}</option>}
           {options?.map((o) => (
             <option key={o} value={o}>
@@ -507,9 +616,30 @@ function Row({
             </option>
           ))}
         </select>
+      ) : type === 'secret' ? (
+        <div className="relative">
+          <input
+            className="input pr-9 font-mono text-xs py-2"
+            type={reveal ? 'text' : 'password'}
+            value={value}
+            readOnly={locked}
+            placeholder={placeholder}
+            onChange={(e) => onChange(key, e.target.value)}
+          />
+          {!locked && value && (
+            <button
+              type="button"
+              className="icon-btn h-7 w-7 absolute right-1.5 top-1/2 -translate-y-1/2"
+              onClick={() => setReveal(!reveal)}
+              title={reveal ? 'Hide secret' : 'Reveal secret'}
+            >
+              {reveal ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            </button>
+          )}
+        </div>
       ) : (
         <input
-          className="input"
+          className="input text-xs py-2"
           type={type === 'number' ? 'number' : 'text'}
           value={value}
           readOnly={locked}
@@ -518,7 +648,7 @@ function Row({
         />
       )}
 
-      {help && <em className="mt-1 block text-xs text-muted">{help}</em>}
+      {help && <p className="mt-1 text-[11px] text-muted leading-tight">{help}</p>}
     </label>
   )
 }

@@ -1,6 +1,13 @@
 import { request } from '../../lib/api'
 
 /** Only the fields the screen shows — see FIELDS in the backend's core.py. */
+export type ProductImage = {
+  id: number
+  src: string
+  name?: string
+  alt?: string
+}
+
 export type Product = {
   id: number
   name: string
@@ -14,6 +21,8 @@ export type Product = {
   permalink: string
   date_modified: string
   date_modified_gmt: string
+  images?: ProductImage[]
+  image?: string | null
 }
 
 export type ProductPage = {
@@ -34,8 +43,24 @@ export type ProductInput = {
 }
 
 export const productsApi = {
-  list: (page: number, perPage: number, search: string) => {
-    const q = new URLSearchParams({ page: String(page), per_page: String(perPage), search })
+  list: (
+    page: number,
+    perPage: number,
+    search: string,
+    orderby: string = 'date',
+    order: string = 'desc',
+    status: string = '',
+    stock_status: string = '',
+  ) => {
+    const q = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+      orderby,
+      order,
+    })
+    if (search.trim()) q.set('search', search.trim())
+    if (status && status !== 'all') q.set('status', status)
+    if (stock_status && stock_status !== 'all') q.set('stock_status', stock_status)
     return request<ProductPage>(`/products?${q}`)
   },
   create: (values: ProductInput) =>

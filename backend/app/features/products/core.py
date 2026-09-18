@@ -31,6 +31,7 @@ FIELDS = (
     "permalink",
     "date_modified",
     "date_modified_gmt",
+    "images",
 )
 
 EDITABLE = ("name", "sku", "regular_price", "sale_price", "stock_status", "status", "description")
@@ -39,7 +40,20 @@ STATUS = ("publish", "draft", "pending", "private")
 
 
 def _trim(product: dict) -> dict:
-    return {key: product.get(key) for key in FIELDS}
+    out = {key: product.get(key) for key in FIELDS}
+    images = product.get("images")
+    if isinstance(images, list) and images:
+        first = images[0]
+        if isinstance(first, dict):
+            out["image"] = first.get("src")
+        elif isinstance(first, str):
+            out["image"] = first
+    elif product.get("image"):
+        img = product.get("image")
+        out["image"] = img.get("src") if isinstance(img, dict) else str(img)
+    else:
+        out["image"] = None
+    return out
 
 
 def _int(value: object, fallback: int) -> int:
@@ -91,10 +105,26 @@ def list_products(
     page: int = 1,
     per_page: int = 20,
     search: str = "",
+    orderby: str = "date",
+    order: str = "desc",
+    status: str = "",
+    stock_status: str = "",
     timeout: int = 20,
 ) -> dict:
     page = max(1, _int(page, 1))
     per_page = min(max(1, _int(per_page, 20)), PER_PAGE_MAX)
+
+    params: dict[str, object] = {"page": page, "per_page": per_page}
+    if search:
+        params["search"] = search
+    if orderby:
+        params["orderby"] = orderby
+    if order:
+        params["order"] = order
+    if status and status != "all":
+        params["status"] = status
+    if stock_status and stock_status != "all":
+        params["stock_status"] = stock_status
 
     try:
         data, headers = call(
@@ -102,7 +132,7 @@ def list_products(
             user,
             app_password,
             PATH,
-            params={"page": page, "per_page": per_page, "search": search},
+            params=params,
             timeout=timeout,
         )
     except WpError as e:

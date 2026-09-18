@@ -1,4 +1,6 @@
 import type { ComponentType } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Package, Sliders } from 'lucide-react'
 import Home from '../pages/Home'
 import Settings from '../pages/Settings'
 import Products from './products/Page'
@@ -21,10 +23,12 @@ export type Tab = {
   id: string
   label: string
   Page: ComponentType
+  icon: LucideIcon
+  badge?: string
 }
 
 export const TABS: Tab[] = [
-  { id: 'home', label: 'Home', Page: Home },
-  { id: 'products', label: 'Products', Page: Products },
-  { id: 'settings', label: 'Settings', Page: Settings },
+  { id: 'home', label: 'Dashboard', Page: Home, icon: LayoutDashboard },
+  { id: 'products', label: 'Products', Page: Products, icon: Package },
+  { id: 'settings', label: 'Settings', Page: Settings, icon: Sliders },
 ]

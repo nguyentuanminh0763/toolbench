@@ -51,7 +51,15 @@ def _run(fn: Callable, *args, **kwargs):
 
 
 @router.get("")
-def list_products(page: int = 1, per_page: int = 20, search: str = "") -> dict:
+def list_products(
+    page: int = 1,
+    per_page: int = 20,
+    search: str = "",
+    orderby: str = "date",
+    order: str = "desc",
+    status: str = "",
+    stock_status: str = "",
+) -> dict:
     base, user, password, timeout = _site()
     return _run(
         core.list_products,
@@ -61,6 +69,10 @@ def list_products(page: int = 1, per_page: int = 20, search: str = "") -> dict:
         page=page,
         per_page=per_page,
         search=search,
+        orderby=orderby,
+        order=order,
+        status=status,
+        stock_status=stock_status,
         timeout=timeout,
     )
 

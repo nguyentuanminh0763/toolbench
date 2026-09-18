@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { ApiError, type TestResult } from '../lib/api'
+import { RefreshCw, CheckCircle2, AlertCircle, Info } from 'lucide-react'
 
 /**
  * "Test connection" for a settings group.
- *
- * It checks what is stored, not what is on screen — so it refuses to run while
- * there are unsaved edits. Testing stale values and reporting success is worse
- * than not testing at all.
+ * Checks what is stored in the database, refusing to run while dirty.
  */
 export default function TestButton({
   label,
@@ -17,7 +15,6 @@ export default function TestButton({
   label: string
   run: () => Promise<TestResult>
   dirty: boolean
-  /** Lets the caller show the same verdict somewhere else — the connector list. */
   onResult?: (result: TestResult) => void
 }) {
   const [busy, setBusy] = useState(false)
@@ -38,23 +35,38 @@ export default function TestButton({
   }
 
   return (
-    <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+    <div className="mt-4 pt-3 border-t border-line flex flex-wrap items-center gap-3">
       <button
-        className="btn px-3.5 py-1.5 text-[13px]"
+        className="btn text-xs py-1.5 px-3"
         type="button"
         onClick={click}
         disabled={busy || dirty}
       >
-        {busy ? 'Testing…' : label}
+        <RefreshCw className={`h-3.5 w-3.5 ${busy ? 'animate-spin text-accent' : 'text-muted'}`} />
+        <span>{busy ? 'Testing connection…' : label}</span>
       </button>
+
       {dirty ? (
-        <span className="text-[13px] text-muted">Save first — this checks the stored values.</span>
+        <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+          <Info className="h-3.5 w-3.5 flex-none" />
+          <span>Save changes first to test live values</span>
+        </div>
       ) : (
         result && (
-          <span className={`text-[13px] ${result.ok ? 'text-success' : 'text-danger'}`}>
-            {result.ok ? '✓ ' : '✕ '}
-            {result.message}
-          </span>
+          <div
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${
+              result.ok
+                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20'
+            }`}
+          >
+            {result.ok ? (
+              <CheckCircle2 className="h-3.5 w-3.5 flex-none" />
+            ) : (
+              <AlertCircle className="h-3.5 w-3.5 flex-none" />
+            )}
+            <span className="font-medium">{result.message}</span>
+          </div>
         )
       )}
     </div>
