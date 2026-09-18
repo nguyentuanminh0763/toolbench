@@ -208,25 +208,26 @@ export default function Settings() {
     <section>
       <h1>Settings</h1>
 
-      <div className="subtabs">
-        <button
-          className={tab === 'general' ? 'active' : ''}
-          onClick={() => show('general')}
-        >
-          General
-        </button>
-        <button
-          className={tab === 'connections' ? 'active' : ''}
-          onClick={() => show('connections')}
-        >
-          Connections
-        </button>
+      <div className="mb-4.5 flex gap-1.5">
+        {(['general', 'connections'] as const).map((id) => (
+          <button
+            key={id}
+            className={`cursor-pointer rounded-lg border px-3.5 py-1.5 capitalize ${
+              tab === id
+                ? 'border-accent bg-accent text-white'
+                : 'border-line bg-transparent text-fg hover:bg-line'
+            }`}
+            onClick={() => show(id)}
+          >
+            {id}
+          </button>
+        ))}
       </div>
 
       {tab === 'general' ? (
         <>
-          <p className="muted">
-            Stored in <code>backend/data.db</code> on this machine. Never committed,
+          <p className="mb-4 text-[13px] text-muted">
+            Stored in <Code>backend/data.db</Code> on this machine. Never committed,
             never sent anywhere.
           </p>
           {GENERAL.map((g) => (
@@ -235,7 +236,7 @@ export default function Settings() {
         </>
       ) : editing ? (
         <>
-          <button className="link back" onClick={() => setOpen('')}>
+          <button className="btn-link mb-2.5" onClick={() => setOpen('')}>
             ← All connections
           </button>
           <GroupCard
@@ -258,12 +259,14 @@ export default function Settings() {
         />
       )}
 
-      <div className="savebar">
-        <button className="primary" onClick={save} disabled={saving}>
+      {/* Fixed so Save is reachable without scrolling back up. It starts where
+          the sidebar ends, hence w-sidebar being a shared value. */}
+      <div className="fixed right-0 bottom-0 left-sidebar flex items-center gap-3 border-t border-line bg-soft px-[30px] py-3">
+        <button className="btn-primary" onClick={save} disabled={saving}>
           {saving ? 'Saving…' : 'Save'}
         </button>
-        {saved && <span className="ok">{saved}</span>}
-        {error && <span className="error">{error}</span>}
+        {saved && <span className="text-[13px] text-success">{saved}</span>}
+        {error && <span className="text-[13px] text-danger">{error}</span>}
       </div>
     </section>
   )
@@ -299,24 +302,26 @@ function ConnectorList({
 
   return (
     <>
-      <p className="muted">
+      <p className="mb-4 text-[13px] text-muted">
         Credentials for the places this tool talks to. They stay in{' '}
-        <code>backend/data.db</code> on this machine.
+        <Code>backend/data.db</Code> on this machine.
       </p>
 
       <input
         type="search"
-        className="searchbox"
+        className="input mb-3"
         placeholder="Search connections"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
 
-      <div className="chips">
+      <div className="mb-1.5 flex gap-1.5">
         {FILTERS.map((f) => (
           <button
             key={f.id}
-            className={`chip${only === f.id ? ' active' : ''}`}
+            className={`cursor-pointer rounded-full border border-line px-3 py-1 text-[13px] ${
+              only === f.id ? 'bg-line text-fg' : 'bg-transparent text-muted hover:bg-line'
+            }`}
             onClick={() => setOnly(f.id)}
           >
             {f.label}
@@ -326,27 +331,30 @@ function ConnectorList({
 
       {shown.length === 0 ? (
         // Without this the table just vanishes and reads as a broken screen.
-        <p className="muted">Nothing matches that.</p>
+        <p className="mb-4 text-[13px] text-muted">Nothing matches that.</p>
       ) : (
-        <table className="table conns">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr>
-              <th>Connection</th>
-              <th>Type</th>
-              <th>Status</th>
+            <tr className="border-b border-line text-left text-xs font-medium text-muted">
+              <th className="w-2/5 py-2">Connection</th>
+              <th className="py-2">Type</th>
+              <th className="py-2 text-right">Status</th>
             </tr>
           </thead>
           <tbody>
             {shown.map((g) => (
-              <tr key={g.title}>
-                <td>
-                  <button className="rowname" onClick={() => onOpen(g.title)}>
+              <tr key={g.title} className="border-b border-line last:border-b-0">
+                <td className="py-2.5">
+                  <button
+                    className="flex cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0 text-left font-medium text-fg hover:text-accent"
+                    onClick={() => onOpen(g.title)}
+                  >
                     <ConnIcon group={g} />
                     {g.title}
                   </button>
                 </td>
-                <td className="muted inline">{g.connection!.kind}</td>
-                <td>
+                <td className="py-2.5 text-[13px] text-muted">{g.connection!.kind}</td>
+                <td className="py-2.5 text-right">
                   <Status
                     group={g}
                     values={values}
@@ -367,12 +375,19 @@ function ConnIcon({ group }: { group: Group }) {
   const { color, icon } = group.connection!
   return (
     <span
-      className="conn-icon"
+      className="flex h-7 w-7 flex-none items-center justify-center rounded-[7px] text-sm font-bold text-white uppercase"
       style={{ background: color ?? autoColor(group.title) }}
       aria-hidden="true"
     >
       {icon ?? group.title[0]}
     </span>
+  )
+}
+
+/** `backend/data.db` and friends. Inline because it is two lines of styling. */
+function Code({ children }: { children: ReactNode }) {
+  return (
+    <code className="rounded border border-line bg-soft px-1.5 py-px text-xs">{children}</code>
   )
 }
 
@@ -395,23 +410,26 @@ function Status({
 }) {
   if (result) {
     return (
-      <span className={result.ok ? 'ok' : 'error'} title={result.message}>
+      <span
+        className={`text-[13px] ${result.ok ? 'text-success' : 'text-danger'}`}
+        title={result.message}
+      >
         {result.ok ? '✓ Connected' : '✕ Failed'}
       </span>
     )
   }
   if (!group.connection!.filled(values)) {
     return (
-      <button className="plain" onClick={onOpen}>
+      <button className="btn px-3.5 py-1 text-[13px]" onClick={onOpen}>
         Connect
       </button>
     )
   }
   // Filled in but unproven. Only say so where a test actually exists to run.
   return group.test ? (
-    <span className="muted inline">Set up — not tested</span>
+    <span className="text-[13px] text-muted">Set up — not tested</span>
   ) : (
-    <span className="ok">✓ Set up</span>
+    <span className="text-[13px] text-success">✓ Set up</span>
   )
 }
 
@@ -432,8 +450,10 @@ function GroupCard({
   return (
     <div className="card">
       <h2>{group.title}</h2>
-      {group.note && <p className="muted">{group.note}</p>}
-      <div className="grid">
+      {group.note && <p className="mt-0.5 mb-3.5 text-[13px] text-muted">{group.note}</p>}
+      {/* Two columns; a field marked full spans both, so short fields pair up
+          and the card stays short instead of one endless column. */}
+      <div className="grid grid-cols-2 gap-x-3.5 gap-y-3">
         {shown.map((f) => (
           <Row key={f.key} field={f} value={values[f.key] ?? ''} onChange={set} />
         ))}
@@ -458,8 +478,8 @@ function Row({
 
   if (type === 'keys') {
     return (
-      <div className="field full">
-        <span className="label">{label}</span>
+      <div className="col-span-full block min-w-0">
+        <span className="mb-1 block text-[13px] font-medium">{label}</span>
         <KeyList value={value} onChange={(v) => onChange(key, v)} />
       </div>
     )
@@ -468,18 +488,18 @@ function Row({
   const locked = type === 'secret' && value.includes(MASK)
 
   return (
-    <label className={`field${half ? '' : ' full'}`}>
-      <span className="label">
+    <label className={`block min-w-0 ${half ? '' : 'col-span-full'}`}>
+      <span className="mb-1 block text-[13px] font-medium">
         {label}
         {locked && (
-          <button type="button" className="link" onClick={() => onChange(key, '')}>
+          <button type="button" className="btn-link ml-2" onClick={() => onChange(key, '')}>
             Change
           </button>
         )}
       </span>
 
       {type === 'select' ? (
-        <select value={value} onChange={(e) => onChange(key, e.target.value)}>
+        <select className="input" value={value} onChange={(e) => onChange(key, e.target.value)}>
           {!options?.includes(value) && <option value={value}>{value || '—'}</option>}
           {options?.map((o) => (
             <option key={o} value={o}>
@@ -489,6 +509,7 @@ function Row({
         </select>
       ) : (
         <input
+          className="input"
           type={type === 'number' ? 'number' : 'text'}
           value={value}
           readOnly={locked}
@@ -497,7 +518,7 @@ function Row({
         />
       )}
 
-      {help && <em className="hint">{help}</em>}
+      {help && <em className="mt-1 block text-xs text-muted">{help}</em>}
     </label>
   )
 }

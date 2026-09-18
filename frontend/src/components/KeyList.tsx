@@ -52,19 +52,19 @@ export default function KeyList({
     commit(rows.map((e) => (e.id === id ? { ...e, ...patch } : e)))
 
   return (
-    <div className="keylist">
+    <div className="flex flex-col gap-1.5">
       {rows.map((e, i) => {
         const locked = e.value.includes(MASK)
         return (
-          <div key={e.id} className="keyrow">
+          <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto] items-center gap-1.5">
             <input
-              className="keyname"
+              className="input px-2 py-1.5 text-[13px]"
               value={e.name}
               placeholder={i === 0 ? 'Main' : `Spare ${i}`}
               onChange={(ev) => edit(e.id, { name: ev.target.value })}
             />
             <input
-              className="keyval"
+              className="input px-2 py-1.5 font-mono text-[13px]"
               value={e.value}
               readOnly={locked}
               placeholder="paste the API key"
@@ -73,7 +73,7 @@ export default function KeyList({
             {locked ? (
               <button
                 type="button"
-                className="icon"
+                className="icon-btn"
                 title="Replace this key"
                 // Clear it so the user retypes: merging a typed fragment with a
                 // masked one would be guesswork.
@@ -82,11 +82,11 @@ export default function KeyList({
                 ✎
               </button>
             ) : (
-              <span className="icon-spacer" />
+              <span className="w-7" />
             )}
             <button
               type="button"
-              className="icon"
+              className="icon-btn"
               title="Remove"
               disabled={rows.length === 1 && !e.name && !e.value}
               onClick={() => commit(rows.filter((r) => r.id !== e.id))}
@@ -97,7 +97,7 @@ export default function KeyList({
         )
       })}
 
-      <button type="button" className="link" onClick={() => commit([...rows, blank()])}>
+      <button type="button" className="btn-link self-start" onClick={() => commit([...rows, blank()])}>
         + Add key
       </button>
     </div>

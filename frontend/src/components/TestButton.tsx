@@ -38,15 +38,20 @@ export default function TestButton({
   }
 
   return (
-    <div className="row testrow">
-      <button className="plain" type="button" onClick={click} disabled={busy || dirty}>
+    <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
+      <button
+        className="btn px-3.5 py-1.5 text-[13px]"
+        type="button"
+        onClick={click}
+        disabled={busy || dirty}
+      >
         {busy ? 'Testing…' : label}
       </button>
       {dirty ? (
-        <span className="muted inline">Save first — this checks the stored values.</span>
+        <span className="text-[13px] text-muted">Save first — this checks the stored values.</span>
       ) : (
         result && (
-          <span className={result.ok ? 'ok' : 'error'}>
+          <span className={`text-[13px] ${result.ok ? 'text-success' : 'text-danger'}`}>
             {result.ok ? '✓ ' : '✕ '}
             {result.message}
           </span>

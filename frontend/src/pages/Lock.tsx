@@ -19,10 +19,11 @@ function PasswordField({
   const [shown, setShown] = useState(false)
 
   return (
-    <label className="field full">
-      <span className="label">{label}</span>
-      <div className="withicon">
+    <label className="mb-3 block">
+      <span className="mb-1 block text-[13px] font-medium">{label}</span>
+      <div className="relative">
         <input
+          className="input pr-[38px]"
           type={shown ? 'text' : 'password'}
           value={value}
           autoFocus={autoFocus}
@@ -31,7 +32,7 @@ function PasswordField({
         />
         <button
           type="button"
-          className="icon reveal"
+          className="icon-btn absolute top-1/2 right-1.5 -translate-y-1/2"
           onClick={() => setShown(!shown)}
           title={shown ? 'Hide' : 'Show'}
           aria-label={shown ? 'Hide password' : 'Show password'}
@@ -101,10 +102,10 @@ export default function Lock({
   }
 
   return (
-    <div className="lockscreen">
-      <form className="card lockcard" onSubmit={submit}>
+    <div className="flex min-h-screen items-center justify-center p-5">
+      <form className="card m-0 w-full max-w-[400px]" onSubmit={submit}>
         <h2>{setupMode ? 'Choose a password' : 'Unlock'}</h2>
-        <p className="muted">
+        <p className="mt-0.5 mb-3.5 text-[13px] text-muted">
           {setupMode
             ? 'It encrypts the API keys and passwords stored on this machine. Nobody can read them from data.db without it — including you, so keep it somewhere safe. There is no reset.'
             : 'Enter the password you set on this machine.'}
@@ -127,11 +128,11 @@ export default function Lock({
           />
         )}
 
-        <div className="row">
-          <button className="primary" type="submit" disabled={busy || !password}>
+        <div className="flex items-center gap-2.5">
+          <button className="btn-primary" type="submit" disabled={busy || !password}>
             {busy ? 'Working…' : setupMode ? 'Create' : 'Unlock'}
           </button>
-          {error && <span className="error">{error}</span>}
+          {error && <span className="text-[13px] text-danger">{error}</span>}
         </div>
       </form>
     </div>

@@ -11,10 +11,10 @@ export default function Home() {
   return (
     <section>
       <h1>Home</h1>
-      <p className="muted">
+      <p className="mb-4 text-[13px] text-muted">
         Backend: {ok === null ? 'checking…' : ok ? 'connected' : 'unreachable'}
       </p>
-      <p className="muted">
+      <p className="mb-4 text-[13px] text-muted">
         Replace this page with the tool's first screen.
       </p>
     </section>

@@ -34,25 +34,29 @@ export default function App() {
     await refresh()
   }
 
+  const navItem = 'cursor-pointer rounded-lg border-0 px-3 py-2 text-left'
+
   return (
-    <div className="layout">
-      <nav className="sidebar">
-        <div className="brand">Toolbench</div>
+    <div className="flex min-h-screen">
+      <nav className="flex w-sidebar flex-none flex-col gap-0.5 border-r border-line bg-soft px-2.5 py-4">
+        <div className="px-2.5 pt-1.5 pb-4 font-bold">Toolbench</div>
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={`nav-item${page === t.id ? ' active' : ''}`}
+            className={`${navItem} ${
+              page === t.id ? 'bg-accent text-white' : 'bg-transparent text-fg hover:bg-line'
+            }`}
             onClick={() => setPage(t.id)}
           >
             {t.label}
           </button>
         ))}
-        <button className="nav-item lockbtn" onClick={lock}>
+        <button className={`${navItem} mt-auto bg-transparent text-muted hover:bg-line`} onClick={lock}>
           Lock
         </button>
       </nav>
 
-      <main className="content">
+      <main className="max-w-[760px] flex-1 px-[30px] pt-[26px] pb-[90px]">
         {/*
           Every tab stays mounted, hidden rather than removed. Switching tabs
           must not wipe a screen's state — a half-filled form or a job in

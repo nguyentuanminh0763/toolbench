@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { ApiError } from '../../lib/api'
 import { productsApi, type Product, type ProductInput, type ProductPage } from './api'
 
@@ -25,6 +25,24 @@ function modified(p: Product): string {
   if (!raw) return '—'
   const at = new Date(raw.endsWith('Z') ? raw : `${raw}Z`)
   return Number.isNaN(at.getTime()) ? '—' : at.toLocaleString()
+}
+
+/** Label above a control. Six of these in the form below. */
+function Field({
+  label,
+  className = '',
+  children,
+}: {
+  label: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <label className={`block min-w-0 ${className}`}>
+      <span className="mb-1 block text-[13px] font-medium">{label}</span>
+      {children}
+    </label>
+  )
 }
 
 export default function Products() {
@@ -80,19 +98,20 @@ export default function Products() {
   return (
     <section>
       <h1>Products</h1>
-      <p className="muted">
+      <p className="mb-4 text-[13px] text-muted">
         The WooCommerce catalogue of the site set up under Settings → Connections.
       </p>
 
-      <div className="toolbar">
+      {/* Search on the left, the one action on the right. */}
+      <div className="mb-1 flex items-start gap-2.5">
         <input
           type="search"
-          className="searchbox"
+          className="input flex-1"
           placeholder="Search products"
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
         />
-        <button className="primary" onClick={() => setEditing('new')}>
+        <button className="btn-primary flex-none" onClick={() => setEditing('new')}>
           New product
         </button>
       </div>
@@ -110,50 +129,61 @@ export default function Products() {
 
       {error && (
         <div className="card">
-          <p className="error">{error}</p>
-          <p className="muted inline">
+          <p className="text-[13px] text-danger">{error}</p>
+          <p className="mt-1 text-[13px] text-muted">
             If that is about credentials, fix them under Settings → Connections.
           </p>
         </div>
       )}
 
-      {loading && <p className="muted">Loading…</p>}
+      {loading && <p className="mt-4 text-[13px] text-muted">Loading…</p>}
 
       {!loading && !error && data && data.items.length === 0 && (
-        <p className="muted">{search ? 'No product matches that.' : 'This shop has no products yet.'}</p>
+        <p className="mt-4 text-[13px] text-muted">
+          {search ? 'No product matches that.' : 'This shop has no products yet.'}
+        </p>
       )}
 
       {!error && data && data.items.length > 0 && (
         <>
-          <table className="table products">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Status</th>
-                <th>Modified</th>
-                <th />
+              <tr className="border-b border-line text-left text-xs font-medium text-muted">
+                <th className="w-[34%] py-2">Product</th>
+                <th className="py-2">Price</th>
+                <th className="py-2">Stock</th>
+                <th className="py-2">Status</th>
+                <th className="py-2">Modified</th>
+                <th className="py-2" />
               </tr>
             </thead>
             <tbody>
               {data.items.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <button className="rowname" onClick={() => setEditing(p)}>
+                <tr key={p.id} className="border-b border-line align-top last:border-b-0">
+                  <td className="py-2.5">
+                    <button
+                      className="cursor-pointer border-0 bg-transparent p-0 text-left font-medium text-fg hover:text-accent"
+                      onClick={() => setEditing(p)}
+                    >
                       {p.name || '(no name)'}
                     </button>
-                    {p.sku && <em className="hint">SKU {p.sku}</em>}
+                    {p.sku && <em className="mt-0.5 block text-xs text-muted">SKU {p.sku}</em>}
                   </td>
-                  <td>{p.price || '—'}</td>
-                  <td className="muted inline">{p.stock_status}</td>
-                  <td className="muted inline">{p.status}</td>
-                  <td className="muted inline">{modified(p)}</td>
-                  <td className="actions">
-                    <button className="plain" onClick={() => setEditing(p)}>
+                  <td className="py-2.5">{p.price || '—'}</td>
+                  <td className="py-2.5 text-[13px] text-muted">{p.stock_status}</td>
+                  <td className="py-2.5 text-[13px] text-muted">{p.status}</td>
+                  <td className="py-2.5 text-[13px] text-muted">{modified(p)}</td>
+                  <td className="py-2.5 text-right whitespace-nowrap">
+                    <button
+                      className="btn ml-1.5 px-2.5 py-0.5 text-[13px]"
+                      onClick={() => setEditing(p)}
+                    >
                       Edit
                     </button>
-                    <button className="plain danger" onClick={() => trash(p)}>
+                    <button
+                      className="btn ml-1.5 px-2.5 py-0.5 text-[13px] text-danger"
+                      onClick={() => trash(p)}
+                    >
                       Trash
                     </button>
                   </td>
@@ -162,14 +192,22 @@ export default function Products() {
             </tbody>
           </table>
 
-          <div className="pager">
-            <button className="plain" disabled={page <= 1} onClick={() => setPage((n) => n - 1)}>
+          <div className="mt-3.5 flex items-center justify-between gap-2.5">
+            <button
+              className="btn px-3.5 py-1 text-[13px]"
+              disabled={page <= 1}
+              onClick={() => setPage((n) => n - 1)}
+            >
               ← Previous
             </button>
-            <span className="muted inline">
+            <span className="text-[13px] text-muted">
               Page {data.page} of {pages} · {data.total} products
             </span>
-            <button className="plain" disabled={page >= pages} onClick={() => setPage((n) => n + 1)}>
+            <button
+              className="btn px-3.5 py-1 text-[13px]"
+              disabled={page >= pages}
+              onClick={() => setPage((n) => n + 1)}
+            >
               Next →
             </button>
           </div>
@@ -224,66 +262,78 @@ function ProductForm({
   return (
     <div className="card">
       <h2>{creating ? 'New product' : `Edit: ${product.name}`}</h2>
-      <div className="grid">
-        <label className="field full">
-          <span className="label">Name</span>
-          <input value={values.name ?? ''} onChange={(e) => set('name', e.target.value)} />
-        </label>
-
-        <label className="field">
-          <span className="label">SKU</span>
-          <input value={values.sku ?? ''} onChange={(e) => set('sku', e.target.value)} />
-        </label>
-
-        <label className="field">
-          <span className="label">Regular price</span>
+      <div className="grid grid-cols-2 gap-x-3.5 gap-y-3">
+        <Field label="Name" className="col-span-full">
           <input
+            className="input"
+            value={values.name ?? ''}
+            onChange={(e) => set('name', e.target.value)}
+          />
+        </Field>
+
+        <Field label="SKU">
+          <input
+            className="input"
+            value={values.sku ?? ''}
+            onChange={(e) => set('sku', e.target.value)}
+          />
+        </Field>
+
+        <Field label="Regular price">
+          <input
+            className="input"
             value={values.regular_price ?? ''}
             placeholder="19.90"
             onChange={(e) => set('regular_price', e.target.value)}
           />
-        </label>
+        </Field>
 
-        <label className="field">
-          <span className="label">Sale price</span>
+        <Field label="Sale price">
           <input
+            className="input"
             value={values.sale_price ?? ''}
             placeholder="leave empty for none"
             onChange={(e) => set('sale_price', e.target.value)}
           />
-        </label>
+        </Field>
 
-        <label className="field">
-          <span className="label">Stock</span>
-          <select value={values.stock_status} onChange={(e) => set('stock_status', e.target.value)}>
+        <Field label="Stock">
+          <select
+            className="input"
+            value={values.stock_status}
+            onChange={(e) => set('stock_status', e.target.value)}
+          >
             {STOCK.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="field">
-          <span className="label">Status</span>
-          <select value={values.status} onChange={(e) => set('status', e.target.value)}>
+        <Field label="Status">
+          <select
+            className="input"
+            value={values.status}
+            onChange={(e) => set('status', e.target.value)}
+          >
             {STATUS.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
       </div>
 
-      <div className="row">
-        <button className="primary" onClick={save} disabled={busy}>
+      <div className="mt-3.5 flex items-center gap-2.5">
+        <button className="btn-primary" onClick={save} disabled={busy}>
           {busy ? 'Saving…' : creating ? 'Create' : 'Save changes'}
         </button>
-        <button className="plain" onClick={onCancel} disabled={busy}>
+        <button className="btn" onClick={onCancel} disabled={busy}>
           Cancel
         </button>
-        {error && <span className="error">{error}</span>}
+        {error && <span className="text-[13px] text-danger">{error}</span>}
       </div>
     </div>
   )
